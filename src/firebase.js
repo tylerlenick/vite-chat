@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
+import { onUnmounted } from "vue";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -24,7 +25,17 @@ const analytics = getAnalytics(app);
 const auth = firebase.auth();
 
 export function useAuth(){
-    const user = ref(null);
-    auth.onAuthStateChange
+    const user = ref(null)
+    const unsubscribe = auth.onAuthStateChange(_user => (user.value = _user))
+    onUnmounted(unsubscribe)
+    const isLogin = computed(() => user.value !== null)
 
+    const signIn = async() => {
+      const googleProvider = new firebase.auth.GoogleAuthProvider()
+      await auth.signInWithPopup(googleProvider)
+    }
+
+    const signOut = () => auth.signOut()
+
+    return { user, isLogin, signIn, signOut }
 }
