@@ -39,3 +39,32 @@ export function useAuth(){
 
     return { user, isLogin, signIn, signOut }
 }
+
+const firestore = firebase.firestore()
+const messageCollection = firestore.collection('messages')
+const messagesQuery = messageCollection.orderBy('created_at', 'desc').limit(100)
+
+export function useChat() {
+  const messages = ref([])
+  const unsubscribe = messagesQuery.onSnapshot(snapshot => {
+    messages.value = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .reverse()
+  })
+  onUnmounted(unsubscribe)
+
+  const { user, isLogin } = useAuth()
+  const sendMessage = text => { 
+    if (!isLogin.value) return
+    const { photoURL, uid, displayName } = user.value
+    messageCollection.add({
+      userName: displayName,
+      userId: uid,
+      userPhotoURL: photoURL,
+      text: text,
+      createdAt: firebase.firestoreFieldValue.serverTimestamp()
+    })
+  }
+
+  return { messages, sendMessage }
+}
